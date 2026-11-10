@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mohave County Surplus Recovery Portal</title>
+  
+  <!-- PWA Manifest & Icons -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#020617">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Mohave Recovery">
+  <link rel="apple-touch-icon" href="icons/icon-152x152.png">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: { brand: { 50: '#f0f9ff', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1' } },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            serif: ['Merriweather', 'Georgia', 'serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; min-height: 100%; background-color: #020617; color: #f8fafc; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+    .main-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+    @media (min-width: 1024px) { .main-grid { grid-template-columns: 430px 1fr; } }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0b0f19; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+    .privacy-masked .mask-target { filter: blur(5px) !important; user-select: none !important; transition: filter 0.2s ease; }
+    
+    .legal-paper { background-color: #ffffff !important; color: #0f172a !important; font-family: 'Merriweather', Georgia, serif; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); border-radius: 4px; position: relative; line-height: 1.7; }
+    .pleading-border { border: 2px solid #000000; padding: 2.25rem 2.5rem; min-height: 960px; position: relative; }
+    [contenteditable="true"]:focus { outline: 2px dashed #0284c7; background-color: rgba(2, 132, 199, 0.04); border-radius: 2px; }
+
+    @media print {
+      @page { size: letter portrait; margin: 0.65in 0.75in 0.65in 0.75in; }
+      *, *::before, *::after { box-shadow: none !important; text-shadow: none !important; }
+      html, body { background: #ffffff !important; color: #000000 !important; display: block !important; width: 100% !important; height: auto !important; overflow: visible !important; margin: 0 !important; padding: 0 !important; }
+      .no-print, header, aside, #pinLockModal, #toastNotification, .modal-backdrop, #docSelectorBar, #sidebarColumn { display: none !important; visibility: hidden !important; }
+      main, .main-grid, #documentColumn, #legalPaperContainer { display: block !important; position: static !important; width: 100% !important; max-width: 100% !important; height: auto !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; background: transparent !important; border: none !important; }
+      .pleading-border { border: none !important; padding: 0 !important; min-height: 0 !important; overflow: visible !important; }
+      .legal-sheet { display: block !important; width: 100% !important; font-family: 'Merriweather', 'Times New Roman', serif !important; font-size: 10pt !important; line-height: 1.4 !important; color: #000000 !important; }
+      .page-break { page-break-before: always; break-before: page; }
+    }
+    
+    .modal-backdrop { background-color: rgba(2,6,23,0.88); backdrop-filter: blur(8px); }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-cyan-500 selection:text-white">
+
+  <!-- PIN VAULT OVERLAY -->
+  <div id="pinLockModal" style="display: flex;" class="fixed inset-0 z-50 items-center justify-center modal-backdrop p-4">
+    <div id="pinBox" class="bg-slate-900 border border-slate-800 shadow-2xl rounded-2xl w-full max-w-sm p-6 text-center relative overflow-hidden">
+      <div class="inline-flex p-3 rounded-xl bg-slate-800/80 border border-slate-700/60 mb-3 text-cyan-400">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+      </div>
+      <h2 class="text-base font-bold text-white tracking-wide">Mohave County Recovery Vault</h2>
+      <p class="text-xs text-slate-400 mt-1 mb-4">Enter Master Security PIN (<strong class="text-slate-300 font-mono">667645</strong>)</p>
+      
+      <div class="flex justify-center items-center gap-2 mb-5">
+        <div id="dot1" class="w-3.5 h-3.5 rounded-full border border-slate-600 bg-slate-800 transition-all"></div>
+        <div id="dot2" class="w-3.5 h-3.5 rounded-full border border-slate-600 bg-slate-800 transition-all"></div>
+        <div id="dot3" class="w-3.5 h-3.5 rounded-full border border-slate-600 bg-slate-800 transition-all"></div>
+        <div id="dot4" class="w-3.5 h-3.5 rounded-full border border-slate-600 bg-slate-800 transition-all"></div>
+        <div id="dot5" class="w-3.5 h-3.5 rounded-full border border-slate-600 bg-slate-800 transition-all"></div>
+        <div id="dot6" class="w-3.5 h-3.5 rounded-full border border-slate-600 bg-slate-800 transition-all"></div>
+      </div>
+      
+      <div class="grid grid-cols-3 gap-2 max-w-[240px] mx-auto mb-4 font-mono">
+        <button onclick="window.pressPin('1')" type="button" class="h-11 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-cyan-600 border border-slate-700 text-sm font-semibold transition touch-manipulation">1</button>
+        <button onclick="window.pressPin('2')" type="button" class="h-11 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-cyan-600 border border-slate-700 text-sm font-semibold transition touch-manipulation">2</button>
+        <button onclick="window.pressPin('3')" type="button" class="h-11 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-cyan-600 border border-slate-700 text-sm font-semibold transition touch-manipulation">3</button>
+        <button onclick="window.pressPin('4')" type="button" class="h-11 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-cyan-600 border border-slate-700 text-sm font-semibold transition touch-manipulation">4</button>
+        <button onclick="window.pressPin('5')" type="button" class="h-11 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-cyan-600 border border-slate-700 text-sm font-semibold transition touch-manipulation">5</button>
+        <button onclick="window.pressPin('6')" type="button" class="h-11 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-cyan-600 border border-slate-700 text-sm font-semibold transition touch-manipulation">6</button>
+        <button onclick="window.pressPin('7')" type="button" class="h-11 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-cyan-600 border border-slate-700 text-sm font-semibold transition touch-manipulation">7</button>
+        <button onclick="window.pressPin('8')" type="button" class="h-11 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-cyan-600 border border-slate-700 text-sm font-semibold transition touch-manipulation">8</button>
+        <button onclick="window.pressPin('9')" type="button" class="h-11 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-cyan-600 border border-slate-700 text-sm font-semibold transition touch-manipulation">9</button>
+        <button onclick="window.clearPin()" type="button" class="h-11 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 border border-rose-900 text-rose-300 text-xs font-semibold transition touch-manipulation">CLEAR</button>
+        <button onclick="window.pressPin('0')" type="button" class="h-11 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-cyan-600 border border-slate-700 text-sm font-semibold transition touch-manipulation">0</button>
+        <button onclick="window.backspacePin()" type="button" class="h-11 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-cyan-600 border border-slate-700 text-slate-300 text-xs font-semibold transition touch-manipulation">⌫</button>
+      </div>
+      
+      <div id="pinErrorMsg" class="text-[11px] text-rose-400 font-medium min-h-[18px] mb-2"></div>
+      
+      <div class="flex justify-between items-center px-2 pt-2 border-t border-slate-800">
+        <button onclick="window.disablePinForever()" type="button" class="text-[10px] text-slate-500 hover:text-rose-400 transition underline">Disable PIN ✕</button>
+        <button onclick="window.bypassLock()" type="button" class="text-[11px] text-cyan-400 font-semibold hover:text-cyan-300 transition underline">Instant Unlock ↗</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-40 no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="h-9 w-9 rounded-lg bg-gradient-to-br from-cyan-600 to-indigo-700 flex items-center justify-center font-bold text-white shadow-lg shadow-cyan-900/30 text-sm">AZ</div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-sm font-bold text-white tracking-wide">Mohave County Surplus Recovery</h1>
+            <a href="https://www.azleg.gov/ars/33/00812.htm" target="_blank" title="View AZ Statute 33-812" class="hidden sm:flex bg-cyan-950 hover:bg-cyan-900 transition text-cyan-300 border border-cyan-800/80 hover:border-cyan-500 text-[10px] font-mono px-2 py-0.5 rounded font-semibold items-center gap-1">
+              A.R.S. § 33-812
+            </a>
+          </div>
+          <div class="text-[11px] text-slate-400">Kingman Superior Court Civil Recovery Division (v3.8)</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="window.togglePrivacyMask()" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-medium flex items-center gap-1.5 transition touch-manipulation">👁<span class="hidden sm:inline"> Mask</span></button>
+        <button onclick="window.lockVault()" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-medium flex items-center gap-1.5 transition touch-manipulation">🔒<span class="hidden sm:inline"> Lock</span></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex-1 w-full flex flex-col">
+    <div class="main-grid flex-1 items-start">
+      
+      <!-- SIDEBAR -->
+      <div id="sidebarColumn" class="space-y-4 no-print">
+        
+        <!-- SEARCH & ACTION BUTTONS -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 shadow-md">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">📋 Verified Roster</span>
+            <span id="caseCountBadge" class="text-[10px] bg-slate-800 text-cyan-400 border border-slate-700 px-2 py-0.5 rounded font-mono font-semibold">0 Files</span>
+          </div>
+          
+          <div class="flex items-center gap-1.5 mb-3 border-b border-slate-800 pb-3">
+            <button onclick="window.syncCounty()" class="flex-1 px-2 py-1.5 rounded bg-slate-800 border border-slate-700 hover:bg-slate-700 text-cyan-400 text-xs flex items-center justify-center gap-1 transition font-medium touch-manipulation">🔄 Sync</button>
+            <button onclick="window.openModal('modalImport')" class="flex-1 px-2 py-1.5 rounded bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-300 text-xs flex items-center justify-center gap-1 transition font-medium touch-manipulation">📋 Import</button>
+            <button onclick="window.openModal('modalAdd')" class="flex-1 px-2 py-1.5 rounded bg-amber-900/30 border border-amber-700/50 hover:bg-amber-900/50 text-amber-400 text-xs flex items-center justify-center gap-1 transition font-medium touch-manipulation">+ Add</button>
+          </div>
+
+          <input type="text" id="caseSearchInput" oninput="window.handleSearch(this.value)" placeholder="Search claimant, case #, APN..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition mb-3">
+          <div id="caseRosterList" class="space-y-1.5 max-h-56 overflow-y-auto pr-1"></div>
+        </div>
+
+        <!-- ACTIVE FILE DETAILS -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 shadow-md space-y-3">
+          <div class="flex items-start justify-between">
+            <div>
+              <div class="text-[10px] text-cyan-400 font-mono font-semibold uppercase tracking-wider">Active Recovery File</div>
+              <div id="cardClaimantName" class="text-sm font-bold text-white mt-0.5 truncate max-w-[210px]">---</div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button onclick="window.openEditActiveModal()" class="text-[11px] font-sans px-2 py-0.5 rounded bg-slate-800 hover:bg-cyan-900/40 border border-cyan-700/60 text-cyan-300 transition flex items-center gap-1 touch-manipulation">✏️ Edit</button>
+              <span id="badgeCaseNo" class="text-[11px] font-mono bg-slate-950 text-slate-300 border border-slate-700 px-2 py-0.5 rounded">---</span>
+            </div>
+          </div>
+
+          <!-- APN & PROPERTY DETAILS -->
+          <div class="text-xs space-y-2 text-slate-300 bg-slate-950/70 p-2.5 rounded-lg border border-slate-800 font-mono">
+            <div class="flex justify-between items-center">
+              <span class="text-slate-500 font-sans">Status:</span>
+              <span id="cardStatusBadge" class="px-2 py-0.5 text-[10px] font-sans font-semibold rounded bg-emerald-950 text-emerald-400 border border-emerald-800">Available</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-500 font-sans">Court Docket #:</span>
+              <span id="cardDocketNo" class="text-cyan-300 font-semibold font-mono">---</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-500 font-sans">APN:</span>
+              <div class="flex items-center gap-1.5">
+                <span id="cardAPN" class="text-amber-300 font-semibold font-mono">---</span>
+              </div>
+            </div>
+            <div class="flex justify-between items-start">
+              <span class="text-slate-500 font-sans">Address:</span>
+              <span id="cardAddress" class="text-slate-200 text-right truncate max-w-[220px]">---</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-500 font-sans">Sale Date:</span>
+              <span id="cardSaleDate" class="text-slate-200">---</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-500 font-sans">Deposit Date:</span>
+              <span id="cardDepositDate" class="text-slate-200">---</span>
+            </div>
+          </div>
+
+          <!-- 1-CLICK APN LOOKUP SHORTCUTS -->
+          <div class="flex items-center gap-1.5">
+            <button onclick="window.lookupAssessor()" class="flex-1 text-[10px] text-center bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-400 py-1.5 rounded transition font-medium touch-manipulation">🔍 Assessor</button>
+            <button onclick="window.lookupRecorder()" class="flex-1 text-[10px] text-center bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 py-1.5 rounded transition font-medium touch-manipulation">📜 Recorder</button>
+          </div>
+
+          <!-- UNDERWRITING WATERFALL -->
+          <div class="bg-slate-950 rounded-xl p-3 border border-slate-800 text-xs space-y-2.5 font-mono">
+            <div class="flex justify-between items-center text-slate-400"><span>Gross Surplus Balance:</span><span id="calcGross" class="text-white font-bold text-sm mask-target">$0.00</span></div>
+            <div class="border-t border-slate-800/80 pt-2 space-y-1">
+              <div class="flex justify-between items-center text-slate-400">
+                <span class="text-slate-300 font-sans">💼 Specialist Fee:</span>
+                <div class="flex items-center gap-1"><span class="text-rose-400 font-bold">-</span><input type="number" id="inputSpecialistFee" oninput="window.handleWaterfallInput()" class="w-20 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-right text-xs font-mono font-bold text-rose-400 focus:outline-none" value="2500"></div>
+              </div>
+            </div>
+            <div class="border-t border-slate-800/80 pt-2 space-y-1">
+              <div class="flex justify-between items-center text-slate-400">
+                <span class="text-slate-300 font-sans">🏛 Attorney Fee:</span>
+                <div class="flex items-center gap-1"><span class="text-rose-400 font-bold">-</span><input type="number" id="inputAttorneyFee" oninput="window.handleWaterfallInput()" class="w-20 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-right text-xs font-mono font-bold text-rose-400 focus:outline-none" value="1750"></div>
+              </div>
+            </div>
+            <div class="border-t border-slate-800/80 pt-2 space-y-1">
+              <div class="flex justify-between items-center text-slate-400">
+                <span class="text-slate-300 font-sans">📬 Est. Court/Mail:</span>
+                <div class="flex items-center gap-1"><span class="text-slate-400 font-bold">-</span><input type="number" id="inputFilingCosts" oninput="window.handleWaterfallInput()" class="w-20 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-right text-xs font-mono font-bold text-slate-200 focus:outline-none" value="300"></div>
+              </div>
+            </div>
+            <div class="border-t border-slate-800 pt-2 flex justify-between items-center text-sm font-sans">
+              <span class="text-amber-400 font-semibold">Net Payout:</span><span id="calcNet" class="text-emerald-400 font-bold text-base font-mono mask-target">$0.00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN DOCUMENT VIEWER -->
+      <div id="documentColumn" class="space-y-4 w-full overflow-x-auto pb-4">
+        <div id="docSelectorBar" class="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-md flex flex-wrap gap-2 items-center justify-between no-print">
+          <div class="flex items-center gap-3 w-full sm:w-auto">
+            <label class="text-xs text-slate-400 font-medium hidden sm:block">Template:</label>
+            <select id="docTemplateSelect" onchange="window.switchTemplate(this.value)" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-amber-400 font-semibold focus:outline-none focus:border-amber-400 w-full sm:w-auto">
+              <option value="ars33812">A.R.S. § 33-812 Sworn Affidavit</option>
+              <option value="locatorFee">Lost Property Service Agreement</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-2 text-xs w-full sm:w-auto mt-2 sm:mt-0 justify-end">
+            <button onclick="window.toggleBlankMode()" id="btnBlankMode" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-medium transition flex items-center gap-1 touch-manipulation">📄 Blank Form</button>
+            <button onclick="window.toggleDocEditable()" id="btnDirectEdit" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-medium transition flex items-center gap-1 touch-manipulation">✏️ Edit Text</button>
+            <button onclick="window.print()" class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-semibold shadow-md transition flex items-center gap-1.5 touch-manipulation">🖨 Print / PDF</button>
+          </div>
+        </div>
+
+        <!-- TEMPLATE CONTAINER (MIN-WIDTH FOR MOBILE TO PREVENT CRUSHING LEGAL DOC) -->
+        <div class="min-w-[800px] sm:min-w-0">
+          <div id="legalPaperContainer" class="legal-paper">
+            
+            <!-- TEMPLATE 1: A.R.S. § 33-812 AGREEMENT & AFFIDAVIT -->
+            <div id="templateARS33812" class="pleading-border text-[11px] leading-relaxed block">
+              <div class="text-center font-serif uppercase mb-4">
+                <div class="font-bold text-[13px] tracking-wide leading-snug">SURPLUS FUNDS RECOVERY REPRESENTATION AGREEMENT,<br>VERIFIED AFFIDAVIT OF ENTITLEMENT &amp; LIMITED POWER OF ATTORNEY</div>
+                <div class="text-[10px] font-normal lowercase mt-1 text-slate-600">(Governed Strictly by Arizona Revised Statutes § 33-812(P) • Fee Capped at $2,500.00)</div>
+              </div>
+
+              <div class="border-2 border-rose-800 bg-rose-50 p-4 font-serif text-[11px] text-rose-950 mb-6 leading-relaxed">
+                <strong class="uppercase font-bold text-rose-900">MANDATORY ARIZONA STATUTORY NOTICE TO CLAIMANT (A.R.S. § 33-812(P)):</strong><br>
+                YOU ARE NOT REQUIRED TO HIRE A THIRD PARTY OR PAY ANY FEE TO OBTAIN THESE FUNDS. You have the full legal right under Arizona law to petition the Superior Court of Mohave County directly on your own behalf without paying any fee or percentage. Any third-party contract fee exceeding $2,500.00 is legally presumed unreasonable and void under Arizona statute.
+              </div>
+
+              <div id="editableDocContent1" class="font-serif text-[11px] leading-relaxed text-justify" contenteditable="false">
+                <p class="mb-3"><strong>1. The Parties &amp; Independent Relationship:</strong> This Agreement is entered into between Claimants <strong id="docClaimants">---</strong> ("Claimants") and <strong>SHAYNE BANIAGA</strong> ("Specialist"), operating as Baniaga Asset Recovery. Specialist is an independent recovery specialist and is NOT an attorney, employee, partner, or legal agent of Windtberg Law or any other law firm. Claimants acknowledge that Specialist does not provide legal representation.</p>
+                
+                <p class="mb-3"><strong>2. Subject Asset:</strong> The excess proceeds generated by the non-judicial trustee foreclosure sale of <strong id="docAddress">---</strong> (Mohave County Assessor's Parcel No. <strong id="docAPN" class="text-black font-bold">---</strong>), currently held in the principal sum of <strong id="docGross">$0.00</strong> under Mohave County Treasurer Case No. <strong id="docCaseNo">---</strong> (Superior Court Docket: <strong id="docDocketNo">---</strong>).</p>
+                
+                <p class="mb-3"><strong>3. Agreed Recovery Fee &amp; Legal Allocation:</strong> Claimants agree that Specialist shall receive a total flat fee of <strong><span id="docSpecFee">$2,500.00</span></strong>, retained independent attorney fee allocation of <strong><span id="docAttyFee">$1,750.00</span></strong> (Windtberg Law), plus actual out-of-pocket court filing fees and certified process service (approx. <span id="docFilingCosts">$300.00</span>). NO RECOVERY, NO FEE: If no excess proceeds are ordered disbursed by the Court, Claimants owe absolutely zero ($0.00) dollars in fees or expenses.</p>
+                
+                <p class="mb-3"><strong>4. Estimated Net Distribution &amp; Lienholder Risk Disclosure:</strong> Claimants' estimated net proceeds upon release shall be approximately <strong id="docNet">$0.00</strong>. <br><em>MANDATORY ADVISORY:</em> Claimants expressly understand and acknowledge that this recovery figure is an estimate only. Under A.R.S. § 33-812, disbursement priority is governed by statutory waterfall, and this estimated distribution could be reduced or entirely eliminated by valid competing claims filed by other parties of record, including but not limited to junior lienholders, deed of trust beneficiaries, tax authorities, or judgment creditors.</p>
+                
+                <p class="mb-2"><strong>5. Sworn Affidavit &amp; Proof of Entitlement (A.R.S. § 33-812):</strong> Claimants, being first duly sworn upon oath under penalty of perjury, depose and affirm:</p>
+                <ul class="list-[lower-alpha] pl-8 mb-3 space-y-1">
+                  <li>Claimants are competent adults over 18 years of age with direct personal knowledge of all facts stated herein;</li>
+                  <li>Immediately prior to the trustee's sale conducted on <span id="docSaleDate">---</span>, Claimants held sole legal title in fee simple of record to the subject property;</li>
+                  <li>Claimants have not sold, conveyed, transferred, or assigned their legal or equitable entitlement to these surplus funds to any other individual or company;</li>
+                  <li>To Claimants' best knowledge, no open bankruptcy proceedings, unpaid federal or state tax liens, superior judgment encumbrances, or child support orders attach to these proceeds.</li>
+                </ul>
+                
+                <div class="page-break"></div>
+
+                <p class="mb-3 mt-4"><strong>6. Limited Power of Attorney (LPOA):</strong> Claimants hereby grant Specialist a limited, non-durable power of attorney solely to inspect public records, obtain treasurer statements, submit verified inquiries, coordinate administrative filings, and interface with retained legal counsel. This authorization conveys NO power to encumber, sell, convey, or transfer any other real or personal asset.</p>
+                
+                <p class="mb-3"><strong>7. Retention of Independent Legal Counsel:</strong> Claimants authorize Specialist to retain independent licensed Arizona legal counsel—specifically Windtberg Law (or qualified substitute Arizona counsel)—to appear as Attorney of Record and file the judicial Application for Release of Excess Proceeds in Mohave County Superior Court. Claimants understand they are not obligated to retain any specific attorney and that Specialist is not an agent soliciting clients on behalf of counsel.</p>
+                
+                <p class="mb-3"><strong>8. Irrevocable Client Trust Account Instructions:</strong> Claimants irrevocably instruct retained counsel to receive all disbursed proceeds into the Windtberg Law IOLTA Client Trust Account, deduct the attorney flat fee and actual court costs, disburse Specialist's earned fee, and distribute the remaining net funds directly to Claimants within five (5) business days of bank clearance.</p>
+                
+                <p class="mb-6"><strong>9. Warranty of No Prior Representation:</strong> Claimants confirm that they have not engaged, retained, or signed an agreement with any other attorney or third-party surplus recovery service regarding these funds, and no attorney charging lien exists against this recovery.</p>
+              </div>
+
+              <div class="font-serif text-[11px] mb-8">IN WITNESS WHEREOF, the parties execute this Agreement under penalty of perjury.</div>
+
+              <div class="grid grid-cols-2 gap-10 text-[11px] font-serif mb-8">
+                <div><div class="border-b border-black pb-1 mb-1 font-bold" id="docSig1">---</div><div class="text-[10px] text-slate-600">Claimant</div><div class="mt-2 text-[10px]">Date: ________________________</div></div>
+                <div><div class="border-b border-black pb-1 mb-1 font-bold" id="docSig2">---</div><div class="text-[10px] text-slate-600">Claimant</div><div class="mt-2 text-[10px]">Date: ________________________</div></div>
+                
+                <div class="col-span-2 pt-4 w-1/2">
+                  <div class="border-b border-black pb-1 mb-1 font-bold text-transparent">X</div>
+                  <div class="font-bold">SHAYNE BANIAGA</div>
+                  <div class="text-[10px] text-slate-600">Recovery Specialist</div>
+                  <div class="mt-2 text-[10px]">Date: ________________________</div>
+                </div>
+              </div>
+
+              <div class="border-t border-black pt-6 font-serif text-[11px]">
+                <div class="font-bold uppercase tracking-wider text-[11px] mb-4">ARIZONA NOTARIAL CERTIFICATE OF JURAT (A.R.S. § 41-311 &amp; § 33-812(P))</div>
+                <div class="grid grid-cols-2 gap-6">
+                  <div class="leading-relaxed">
+                    State of Arizona<br>County of Mohave<br><br>
+                    Subscribed and sworn to (or affirmed) before me this _______ day of __________________, 2026, by <strong id="docNotaryNames">---</strong>, proved to me on the basis of satisfactory evidence to be the persons who appeared before me.
+                    <br><br><br>Notary Public Signature: _________________________________<br><br>My Commission Expires: _________________________________
+                  </div>
+                  <div class="border-2 border-dashed border-slate-400 flex items-center justify-center text-center p-4 text-slate-400 font-sans text-[10px] h-32">
+                    [PLACE OFFICIAL NOTARY SEAL / STAMP HERE]
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TEMPLATE 2: LOST PROPERTY AUDIT & LOCATOR SERVICE AGREEMENT -->
+            <div id="templateLocatorFee" class="pleading-border text-[11px] leading-relaxed hidden">
+              <div class="text-center font-serif uppercase mb-4">
+                <div class="font-bold text-[13px] tracking-wide leading-snug">LOST PROPERTY AUDIT &amp; BENEFICIARY LOCATOR SERVICE<br>SERVICE AGREEMENT</div>
+                <div class="text-[10px] font-normal lowercase mt-1 text-slate-600">(Standard contingency agreement for multi-account &amp; entity recovery)</div>
+              </div>
+
+              <div id="editableDocContent2" class="font-serif text-[11px] leading-relaxed text-justify space-y-2.5" contenteditable="false">
+                <p>This Agreement ("Agreement") is by and between <strong id="locClaimant">---</strong> ("Claimant") and <strong>Baniaga Asset Recovery</strong> ("Organization") and is effective when signed by Claimant.</p>
+                
+                <div class="bg-slate-50 p-3 border border-slate-300">
+                  <p class="font-bold mb-1">Background:</p>
+                  <p>This Agreement is made with reference to the following facts and circumstances:</p>
+                  <ul class="list-disc pl-5 space-y-0.5 text-[10.5px]">
+                    <li>Organization is in the business of locating people, heirs to estates, beneficiaries of trusts, corporations, LLCs or other legal entities who are entitled to claim money or property that Organization has located;</li>
+                    <li>As a result of examining government accounts the Organization believes that Claimant directly or an estate, trust, corporation or LLC that Claimant is associated with is eligible to claim approximately <strong id="locMonies">$0.00</strong> (the "Monies") held under Mohave County Treasurer Case No. <strong id="locCaseNo">---</strong>;</li>
+                    <li>Claimant wishes for Organization to verify that Monies are due to Claimant or an Associated Entity and for Organization to then obtain those Monies for Claimant in exchange for Organization receiving a portion of the monies recovered.</li>
+                  </ul>
+                </div>
+
+                <p><strong>1. Services &amp; Duties:</strong> Organization will advance all reasonable and necessary costs (to be reimbursed from Monies recovered if Monies are recovered); perform all duties reasonably necessary to obtain the Monies; provide all forms and documents required to process the claim; and Claimant authorizes Organization to act as its exclusive agent to process the claim.</p>
+
+                <p><strong>2. Compensation &amp; Contingency:</strong> Claimant and Organization agree that payment is strictly contingent upon actually recovering the Monies. If no Monies are recovered, Claimant owes nothing. Claimant and Organization agree that Claimant shall receive <strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;%</strong> of net Monies recovered and Organization shall receive <strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;%</strong> as compensation for Organization's audit, investigative, and recovery work, plus actual third-party filing expenses.</p>
+
+                <p><strong>3. Non-Circumvention:</strong> Claimant acknowledges that Organization has expended substantial resources auditing government-held accounts and locating Claimant. Claimant agrees not to circumvent Organization by attempting to claim these specific funds directly without Organization's involvement.</p>
+                
+                <p><strong>4. Claimant's Warranty:</strong> Claimant represents and warrants that they have the full right and legal capacity to claim the Monies and have not previously assigned or disposed of their right to these funds.</p>
+
+                <p><strong>5. Governing Law:</strong> This Agreement shall be governed under the laws of the State of Arizona. Venue shall be in Mohave County.</p>
+                
+                <p>By signing below Claimant agrees to hire Organization to claim the Monies under the terms of this Agreement.</p>
+
+                <div class="grid grid-cols-2 gap-8 text-[11px] font-serif mt-8">
+                  <div>
+                    <div class="border-b border-black pb-1 mb-1 font-bold" id="locSigClaimant">---</div>
+                    <div class="text-[10px] text-slate-600">Claimant Signature</div>
+                    <div class="mt-3 text-[10px]">Date: ________________________</div>
+                    <div class="mt-3 text-[10px]">Phone: _______________________</div>
+                    <div class="mt-3 text-[10px]">Mailing Address:<br><br>____________________________________</div>
+                  </div>
+                  <div>
+                    <div class="border-b border-black pb-1 mb-1 font-bold text-transparent">X</div>
+                    <div class="font-bold">SHAYNE BANIAGA</div>
+                    <div class="text-[10px] text-slate-600">Recovery Specialist</div>
+                    <div class="mt-3 text-[10px]">Date: ________________________</div>
+                    <div class="mt-3 text-[10px]">Phone: (702) 496-1873</div>
+                    <div class="mt-3 text-[10px]">Office: Kingman, AZ</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODALS -->
+  
+  <!-- EDIT ACTIVE CASE MODAL -->
+  <div id="modalEditCase" style="display: none;" class="fixed inset-0 z-50 items-center justify-center modal-backdrop p-4 no-print">
+    <div class="bg-slate-900 border border-slate-800 shadow-2xl rounded-2xl w-full max-w-md overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
+        <h3 class="text-sm font-bold text-cyan-400 flex items-center gap-2">✏️ Edit Case Details</h3>
+        <button onclick="window.closeModal('modalEditCase')" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <div class="p-5 space-y-3 text-xs max-h-[70vh] overflow-y-auto">
+        <div>
+          <label class="block text-slate-400 mb-1">Case Status</label>
+          <select id="editCaseStatus" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-slate-200">
+            <option value="Available">Available (Unclaimed)</option>
+            <option value="Pending Claim">Pending Claim / Motion Filed</option>
+            <option value="Eviction Action">Eviction Action Filed</option>
+            <option value="Disbursed">Disbursed / Claimed</option>
+            <option value="Escheated">Escheated to State</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-cyan-400 font-semibold mb-1">Superior Court Docket #</label>
+          <input type="text" id="editDocketNo" placeholder="e.g. CV-2023-01682" class="w-full bg-slate-950 border border-cyan-700/80 rounded p-2 text-cyan-300 font-mono font-bold focus:border-cyan-400 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Treasurer Case Number</label>
+          <input type="text" id="editCaseNo" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-slate-200 font-mono">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Trustor / Claimants</label>
+          <input type="text" id="editTrustor" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-slate-200">
+        </div>
+        <div>
+          <label class="block text-amber-400 font-semibold mb-1">Assessor Parcel Number (APN)</label>
+          <input type="text" id="editAPN" placeholder="e.g. 349-07-048" class="w-full bg-slate-950 border border-amber-600/80 rounded p-2 text-amber-300 font-mono font-bold focus:border-amber-400 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Property Address</label>
+          <input type="text" id="editAddress" placeholder="e.g. 4014 Extension Rd, Kingman, AZ" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-slate-200">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Sale Date</label>
+            <input type="text" id="editSaleDate" placeholder="YYYY-MM-DD" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-slate-200 font-mono">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Deposit Date</label>
+            <input type="text" id="editDepDate" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-slate-200 font-mono">
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Gross Surplus Amount ($)</label>
+          <input type="number" step="0.01" id="editGross" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-emerald-400 font-mono font-bold">
+        </div>
+      </div>
+      <div class="px-5 py-3 border-t border-slate-800 bg-slate-950 flex justify-end gap-2">
+        <button onclick="window.closeModal('modalEditCase')" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-200 text-xs font-medium touch-manipulation">Cancel</button>
+        <button onclick="window.saveActiveCaseEdits()" class="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold touch-manipulation">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- IMPORT MODAL -->
+  <div id="modalImport" style="display: none;" class="fixed inset-0 z-50 items-center justify-center modal-backdrop p-4 no-print">
+    <div class="bg-slate-900 border border-slate-800 shadow-2xl rounded-2xl w-full max-w-lg overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2">📋 Import Cases (Excel / TSV / CSV)</h3>
+        <button onclick="window.closeModal('modalImport')" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <div class="p-5">
+        <div class="flex justify-between items-center mb-2">
+          <p class="text-xs text-slate-400">Paste tabular rows from County Ledger or Excel spreadsheet:</p>
+          <button onclick="window.pasteFromClipboard()" class="text-[11px] text-cyan-400 hover:text-cyan-300 font-medium underline touch-manipulation">📋 Paste from Clipboard</button>
+        </div>
+        <div class="text-[10px] text-slate-500 font-mono mb-3 bg-slate-950 p-2 rounded border border-slate-800">
+          Recognized: Case Number | Trustor | Deposit Date | Amount | Balance | APN | Address | Docket
+        </div>
+        <textarea id="importData" class="w-full h-40 bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs text-slate-200 font-mono focus:border-cyan-500 focus:outline-none" placeholder="2023-01682&#9;JANEY R. ISON&#9;12/8/2023&#9;$54,834.27&#9;$54,834.27&#10;2024-00033&#9;DAVID A. KING&#9;1/16/2024&#9;$133,730.19&#9;$133,730.19"></textarea>
+      </div>
+      <div class="px-5 py-3 border-t border-slate-800 bg-slate-950 flex justify-end gap-2">
+        <button onclick="window.closeModal('modalImport')" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-200 text-xs font-medium touch-manipulation">Cancel</button>
+        <button onclick="window.processImport()" class="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold touch-manipulation">Process Import</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD SINGLE CASE MODAL -->
+  <div id="modalAdd" style="display: none;" class="fixed inset-0 z-50 items-center justify-center modal-backdrop p-4 no-print">
+    <div class="bg-slate-900 border border-slate-800 shadow-2xl rounded-2xl w-full max-w-md overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
+        <h3 class="text-sm font-bold text-amber-400 flex items-center gap-2">+ Add Single Case</h3>
+        <button onclick="window.closeModal('modalAdd')" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <div class="p-5 space-y-3 text-xs max-h-[70vh] overflow-y-auto">
+        <div><label class="block text-slate-400 mb-1">Treasurer Case Number</label><input type="text" id="addCaseNo" placeholder="e.g. 2026-00999" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-slate-200 font-mono"></div>
+        <div><label class="block text-slate-400 mb-1">Court Docket Number</label><input type="text" id="addDocketNo" placeholder="e.g. CV-2026-00999" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-cyan-300 font-mono"></div>
+        <div><label class="block text-slate-400 mb-1">Trustor / Claimants</label><input type="text" id="addTrustor" placeholder="e.g. JOHN DOE AND JANE DOE" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-slate-200"></div>
+        <div><label class="block text-amber-400 mb-1">Assessor Parcel Number (APN)</label><input type="text" id="addAPN" placeholder="e.g. 349-07-048" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-amber-300 font-mono"></div>
+        <div><label class="block text-slate-400 mb-1">Property Address</label><input type="text" id="addAddress" placeholder="e.g. 123 Main St, Kingman, AZ" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-slate-200"></div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="block text-slate-400 mb-1">Deposit Date</label><input type="text" id="addDepDate" placeholder="M/D/YYYY" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-slate-200 font-mono"></div>
+          <div><label class="block text-slate-400 mb-1">Sale Date</label><input type="text" id="addSaleDate" placeholder="YYYY-MM-DD" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-slate-200 font-mono"></div>
+        </div>
+        <div><label class="block text-slate-400 mb-1">Gross Balance ($)</label><input type="number" step="0.01" id="addCurBal" placeholder="0.00" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-emerald-400 font-mono"></div>
+      </div>
+      <div class="px-5 py-3 border-t border-slate-800 bg-slate-950 flex justify-end gap-2">
+        <button onclick="window.closeModal('modalAdd')" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-200 text-xs font-medium touch-manipulation">Cancel</button>
+        <button onclick="window.processAdd()" class="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold touch-manipulation">Save Case</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toastNotification" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none no-print"><div class="bg-slate-900 border border-cyan-500/60 shadow-2xl rounded-xl px-4 py-3 flex items-center gap-3 text-sm text-white"><span class="text-cyan-400">✓</span><span id="toastMessage">Action completed successfully</span></div></div>
+
+  <!-- CORE LOGIC -->
+  <script>
+    window.HARDCODED_PIN = "667645"; 
+    window.enteredPin = "";
+    window.isBlankMode = false;
+    
+    window.toggleBlankMode = function() {
+      window.isBlankMode = !window.isBlankMode;
+      var btn = document.getElementById("btnBlankMode");
+      if (window.isBlankMode) {
+        btn.classList.remove("bg-slate-800", "text-slate-300");
+        btn.classList.add("bg-indigo-600", "text-white");
+        btn.innerText = "✕ Cancel Blank";
+        window.showToast("Blank Mode ON: Ready to print.");
+      } else {
+        btn.classList.remove("bg-indigo-600", "text-white");
+        btn.classList.add("bg-slate-800", "text-slate-300");
+        btn.innerText = "📄 Blank Form";
+        window.showToast("Blank Mode OFF.");
+      }
+      window.updateUI();
+    };
+
+    window.pressPin = function(digit) {
+      if (window.enteredPin.length < 6) {
+        window.enteredPin += digit;
+        window.updatePinDots();
+        if (window.enteredPin.length === 6) {
+          setTimeout(window.validatePin, 80);
+        }
+      }
+    };
+
+    window.clearPin = function() {
+      window.enteredPin = "";
+      window.updatePinDots();
+      var err = document.getElementById('pinErrorMsg');
+      if (err) err.innerText = "";
+    };
+
+    window.backspacePin = function() {
+      if (window.enteredPin.length > 0) {
+        window.enteredPin = window.enteredPin.slice(0, -1);
+        window.updatePinDots();
+      }
+    };
+
+    window.bypassLock = function() {
+      var modal = document.getElementById("pinLockModal");
+      if (modal) {
+        modal.style.setProperty("display", "none", "important");
+      }
+      try { sessionStorage.setItem("vault_auth", "true"); } catch(e) {}
+    };
+
+    window.disablePinForever = function() {
+      window.bypassLock();
+      try { 
+        localStorage.setItem("vault_pin_disabled", "true");
+        window.showToast("PIN lock disabled. You will not be prompted on refresh.");
+      } catch(e) {}
+    };
+
+    window.updatePinDots = function() {
+      for (var i = 1; i <= 6; i++) {
+        var dot = document.getElementById("dot" + i);
+        if (dot) {
+          dot.className = (i <= window.enteredPin.length) 
+            ? "w-3.5 h-3.5 rounded-full bg-cyan-400 border border-cyan-300" 
+            : "w-3.5 h-3.5 rounded-full border border-slate-600 bg-slate-800";
+        }
+      }
+    };
+
+    window.validatePin = function() {
+      if (window.enteredPin === window.HARDCODED_PIN) {
+        window.bypassLock();
+      } else {
+        window.clearPin();
+        var err = document.getElementById('pinErrorMsg');
+        if (err) err.innerText = "Invalid PIN (Hint: 667645). Try again.";
+      }
+    };
+
+    window.lockVault = function() {
+      try { 
+        sessionStorage.removeItem("vault_auth");
+        localStorage.removeItem("vault_pin_disabled");
+      } catch(e) {}
+      window.clearPin();
+      var modal = document.getElementById("pinLockModal");
+      if (modal) {
+        modal.style.setProperty("display", "flex", "important");
+      }
+    };
+
+    window.addEventListener("keydown", function(e) {
+      var lm = document.getElementById("pinLockModal");
+      if (lm && lm.style.display !== "none") {
+        var d = null;
+        if (e.key >= '0' && e.key <= '9') {
+          d = e.key;
+        } else if (e.code && e.code.startsWith('Numpad') && e.code.length === 7) {
+          var n = e.code.replace('Numpad', '');
+          if (n >= '0' && n <= '9') d = n;
+        }
+        if (d !== null) {
+          e.preventDefault();
+          window.pressPin(d);
+        }
+        if (e.key === 'Backspace') {
+          e.preventDefault();
+          window.backspacePin();
+        }
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (window.enteredPin.length === 6) window.validatePin();
+          else window.bypassLock();
+        }
+      }
+    });
+
+    try {
+      var MOHAVE_MASTER_DATA = [
+        { caseNo: "2024-02194", trustor: "JACQUELINE MORGAN", date: "11/26/2024", gross: 687.76, apn: "TBD", address: "5538 S Havasu Creek Rd, Fort Mohave, AZ 86426" },
+        { caseNo: "2024-02336", trustor: "ROBERT C. GINGRICH AND SHEILA MARIE GINGRICH", date: "12/30/2024", gross: 25928.80, apn: "TBD", address: "Mohave County, AZ" },
+        { caseNo: "2024-02562", trustor: "ROGER HUGHES", date: "1/16/2025", gross: 14831.20, apn: "TBD", address: "Mohave County, AZ" },
+        { caseNo: "2024-02570", trustor: "SEAN MICHAEL CLINGER", date: "2/20/2025", gross: 27218.01, apn: "229-15-262", address: "4339 S El Toro Dr, Fort Mohave, AZ 86426" },
+        { caseNo: "2025-00688", trustor: "ROGER F. CICIARELLI", date: "3/28/2025", gross: 87802.19, apn: "313-49-026", address: "9854 N Medicine Point Dr, Kingman, AZ 86401" },
+        { caseNo: "2025-00852", trustor: "JACK C. NELSON", date: "4/11/2025", gross: 14707.93, apn: "214-38-304A", address: "709 Holly St, Bullhead City, AZ 86442" },
+        { caseNo: "2025-00847", trustor: "FRANK A. MORSE AND NANCY A. MORSE", date: "4/18/2025", gross: 251.85 },
+        { caseNo: "2025-00974", trustor: "GLENNA L. ARMSTRONG", date: "5/1/2025", gross: 15418.50, apn: "TBD", address: "Mohave County, AZ" },
+        { caseNo: "2025-01003", trustor: "CAROLYN JEAN HUTTON", date: "5/1/2025", gross: 68802.56, apn: "TBD", address: "1651 Turquoise Rd, Bullhead City, AZ 86442" },
+        { caseNo: "2025-01203", trustor: "JANICE L. SEMINGSEN", date: "6/3/2025", gross: 5628.16, apn: "TBD", address: "Mohave County, AZ" },
+        { caseNo: "2025-01455", trustor: "RALPH GORR", date: "7/15/2025", gross: 127510.07, apn: "106-22-014", address: "1969 Commander Dr, Lake Havasu City, AZ 86403" },
+        { caseNo: "2025-02196", trustor: "CRYSTAL WALKER", date: "10/3/2025", gross: 18757.72, apn: "TBD", address: "Mohave County, AZ" },
+        { caseNo: "2025-02387", trustor: "LINDA JEAN NULL", date: "11/4/2025", gross: 3491.90, apn: "TBD", address: "1084 Gemstone Cir, Bullhead City, AZ 86442" },
+        { caseNo: "2025-02565", trustor: "JAMES SNIDER", date: "11/6/2025", gross: 18933.12, apn: "311-23-007", address: "1820 Broudy Dr, Kingman, AZ 86401" },
+        { caseNo: "2025-02677", trustor: "BRUCE ALLEN AND SHANON LYNETTE FERGUSON", date: "11/25/2025", gross: 68806.83, apn: "TBD", address: "Mohave County, AZ" },
+        { caseNo: "2025-02812", trustor: "JOSEPH A. ROZUM", date: "12/8/2025", gross: 4.17, apn: "TBD", address: "1879 Clearwater Dr, Bullhead City, AZ 86442" },
+        { caseNo: "2025-02899", trustor: "SUSAN E ST JOHN", date: "12/26/2025", gross: 13263.07, apn: "220-05-015C", address: "2149 Booster Dr, Bullhead City, AZ 86442" },
+        { caseNo: "2026-00633", trustor: "WILLIE EMILE POELMAN AND NELLIE POELMAN", date: "4/14/2026", gross: 37307.59, apn: "349-07-048", address: "4014 Tercero Rd, Bullhead City, AZ 86429" },
+        { caseNo: "2026-00721", trustor: "TIFFANY AND BRANDON WOODSIDE", date: "4/21/2026", gross: 12320.24, apn: "311-13-032C", address: "2010 Chambers Ave, Kingman, AZ 86401" },
+        { caseNo: "2026-01413", trustor: "SANDRA MELDRUM", date: "6/10/2026", gross: 126943.23, apn: "TBD", address: "Mohave County, AZ" },
+        { caseNo: "2026-01720", trustor: "BARBARA ANGER", date: "7/13/2026", gross: 5972.95, apn: "TBD", address: "Mohave County, AZ" },
+        { caseNo: "2026-01845", trustor: "RICHARD A JOHNSON", date: "8/14/2026", gross: 22139.85, apn: "TBD", address: "Mohave County, AZ" },
+        { caseNo: "2026-02043", trustor: "LARRY N ALLEN", date: "8/27/2026", gross: 2644.26, apn: "TBD", address: "Mohave County, AZ" },
+        { caseNo: "2026-02220", trustor: "SANTIAGO ANGUIANO AND BARBARA J ANGUIANO", date: "10/13/2026", gross: 69083.17, apn: "324-09-486", address: "4370 N Shadow Rd, Kingman, AZ 86409" },
+        { caseNo: "2026-02322", trustor: "SCOTT A RASMUSSEN", date: "10/13/2026", gross: 64323.16, apn: "120-14-019", address: "3061 Erwin Ln, Lake Havasu City, AZ 86404" }
+      ];
+
+      function buildCaseObject(c) {
+        var trustor = (c.claimants || c.trustor || "UNKNOWN CLAIMANT").trim();
+        var parts = trustor.split(/ AND | & /i);
+        return {
+          id: c.id || c.caseNo || ("CASE-" + Date.now()),
+          caseNo: c.caseNo || "TBD",
+          docketNo: c.docketNo || ("CV-" + (c.caseNo || "TBD")),
+          status: c.status || "Available",
+          claimant1: c.claimant1 || (parts[0] ? parts[0].trim() : trustor),
+          claimant2: typeof c.claimant2 !== 'undefined' ? c.claimant2 : (parts[1] ? parts[1].trim() : ""),
+          claimants: trustor,
+          apn: c.apn || "TBD",
+          address: c.address || "Mohave County, AZ",
+          gross: typeof c.gross === 'number' ? c.gross : (parseFloat(c.gross) || 0),
+          saleDate: c.saleDate || "TBD",
+          depositDate: c.depositDate || c.date || "TBD"
+        };
+      }
+
+      var MOHAVE_CASES = [];
+      try {
+        var stored = localStorage.getItem("mohave_recovery_cases_v38"); 
+        if (stored) { 
+          var parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            MOHAVE_CASES = parsed.map(buildCaseObject);
+          }
+        }
+      } catch(e) {}
+      
+      if (!MOHAVE_CASES || MOHAVE_CASES.length === 0) {
+        MOHAVE_CASES = MOHAVE_MASTER_DATA.map(buildCaseObject);
+      }
+      var activeCase = MOHAVE_CASES[0];
+
+      window.saveCasesToStorage = function() {
+        try { localStorage.setItem("mohave_recovery_cases_v38", JSON.stringify(MOHAVE_CASES)); } catch(e){}
+      };
+
+      window.togglePrivacyMask = function() {
+        document.body.classList.toggle("privacy-masked");
+      };
+
+      window.switchTemplate = function(tpl) {
+        var t1 = document.getElementById("templateARS33812");
+        var t2 = document.getElementById("templateLocatorFee");
+        if (tpl === "locatorFee") {
+          if (t1) { t1.classList.remove("block"); t1.classList.add("hidden"); }
+          if (t2) { t2.classList.remove("hidden"); t2.classList.add("block"); }
+        } else {
+          if (t2) { t2.classList.remove("block"); t2.classList.add("hidden"); }
+          if (t1) { t1.classList.remove("hidden"); t1.classList.add("block"); }
+        }
+        window.updateUI();
+      };
+
+      window.toggleDocEditable = function() {
+        var t1 = document.getElementById("templateARS33812");
+        var t2 = document.getElementById("templateLocatorFee");
+        
+        var el = null;
+        if (t1 && !t1.classList.contains("hidden")) el = document.getElementById("editableDocContent1");
+        else if (t2 && !t2.classList.contains("hidden")) el = document.getElementById("editableDocContent2");
+
+        var btn = document.getElementById("btnDirectEdit");
+        if (!el || !btn) return;
+
+        var isEd = el.getAttribute("contenteditable") === "true";
+        el.setAttribute("contenteditable", isEd ? "false" : "true");
+        
+        if (!isEd) {
+          btn.classList.add("bg-amber-600", "text-white");
+          btn.innerText = "💾 Lock Edits";
+          window.showToast("Direct Edit Mode ON: You can click and modify document text directly.");
+        } else {
+          btn.classList.remove("bg-amber-600", "text-white");
+          btn.innerText = "✏️ Edit Text";
+          window.showToast("Direct Edit Mode locked.");
+        }
+      };
+
+      window.renderCaseRoster = function(list) {
+        list = list || MOHAVE_CASES;
+        var container = document.getElementById("caseRosterList");
+        if (!container) return;
+        container.innerHTML = "";
+        document.getElementById("caseCountBadge").innerText = list.length + " Files";
+        
+        list.forEach(function(item) {
+          var isSel = (activeCase && item.id === activeCase.id);
+          var card = document.createElement("div");
+          card.className = "p-2 rounded-lg cursor-pointer transition border " + (isSel ? "bg-cyan-950/70 border-cyan-600/80 shadow-sm" : "bg-slate-950 hover:bg-slate-800/80 border-slate-800");
+          card.onclick = function() { window.selectCase(item.id); };
+          
+          var apnDisplay = (item.apn && item.apn !== 'TBD') ? ('<span class="text-amber-300 font-mono">' + item.apn + '</span>') : '<span class="text-slate-500 font-mono">TBD</span>';
+          var grossFormatted = (typeof item.gross === 'number') ? item.gross.toLocaleString(undefined,{minimumFractionDigits:2}) : "0.00";
+          
+          card.innerHTML = '<div class="flex items-center justify-between text-xs">' +
+            '<span class="font-bold truncate max-w-[190px] ' + (isSel ? 'text-cyan-300' : 'text-slate-200') + '">' + (item.claimants || 'Unknown') + '</span>' +
+            '<span class="font-mono text-[11px] font-semibold text-emerald-400 mask-target">$' + grossFormatted + '</span></div>' +
+            '<div class="flex items-center justify-between text-[10px] text-slate-400 mt-1">' +
+            '<span>APN: ' + apnDisplay + '</span>' +
+            '<span class="font-mono text-slate-500">#' + (item.caseNo || '') + '</span></div>';
+          container.appendChild(card);
+        });
+      };
+
+      window.selectCase = function(id) { 
+        var found = MOHAVE_CASES.find(function(c) { return c.id === id; }); 
+        if (found) { activeCase = found; window.updateUI(); window.renderCaseRoster(); }
+      };
+      
+      window.handleSearch = function(q) { 
+        q = (q || "").toLowerCase(); 
+        window.renderCaseRoster(MOHAVE_CASES.filter(function(c) {
+          return (c.claimants && c.claimants.toLowerCase().includes(q)) || 
+                 (c.caseNo && c.caseNo.toLowerCase().includes(q)) || 
+                 (c.apn && c.apn.toLowerCase().includes(q));
+        })); 
+      };
+
+      window.handleWaterfallInput = function() { window.updateUI(); };
+
+      window.updateUI = function() {
+        if (!activeCase) return;
+        
+        var claimantsUpperRaw = (activeCase.claimants || "---").toUpperCase();
+        document.getElementById('cardClaimantName').innerText = claimantsUpperRaw;
+        document.getElementById('badgeCaseNo').innerText = "#" + (activeCase.caseNo || '---');
+        document.getElementById('cardDocketNo').innerText = activeCase.docketNo || ("CV-" + activeCase.caseNo);
+        document.getElementById('cardAPN').innerText = activeCase.apn || "TBD";
+        document.getElementById('cardAddress').innerText = activeCase.address || "Mohave County, AZ";
+        document.getElementById('cardSaleDate').innerText = activeCase.saleDate || "TBD";
+        document.getElementById('cardDepositDate').innerText = activeCase.depositDate || "TBD";
+
+        var statusBadge = document.getElementById('cardStatusBadge');
+        if (statusBadge) {
+          statusBadge.innerText = activeCase.status || "Available";
+          if (activeCase.status === "Disbursed" || activeCase.status === "Escheated") {
+            statusBadge.className = "px-2 py-0.5 text-[10px] font-sans font-semibold rounded bg-rose-950 text-rose-400 border border-rose-800";
+          } else if (activeCase.status === "Pending Claim") {
+            statusBadge.className = "px-2 py-0.5 text-[10px] font-sans font-semibold rounded bg-amber-950 text-amber-400 border border-amber-800";
+          } else {
+            statusBadge.className = "px-2 py-0.5 text-[10px] font-sans font-semibold rounded bg-emerald-950 text-emerald-400 border border-emerald-800";
+          }
+        }
+
+        var specFee = parseFloat(document.getElementById('inputSpecialistFee').value) || 0;
+        var attyFee = parseFloat(document.getElementById('inputAttorneyFee').value) || 0;
+        var filing = parseFloat(document.getElementById('inputFilingCosts').value) || 0;
+        var grossVal = (typeof activeCase.gross === 'number') ? activeCase.gross : 0;
+        var net = Math.max(0, grossVal - specFee - attyFee - filing);
+        
+        document.getElementById('calcGross').innerText = "$" + grossVal.toLocaleString(undefined, {minimumFractionDigits:2});
+        document.getElementById('calcNet').innerText = "$" + net.toLocaleString(undefined, {minimumFractionDigits:2});
+
+        var isB = window.isBlankMode === true;
+
+        var dClaimantsStr = isB ? "________________________________" : claimantsUpperRaw;
+        var dAddressStr = isB ? "________________________________________________" : (activeCase.address || '---').toUpperCase();
+        var dAPNStr = isB ? "________________________" : activeCase.apn || "TBD";
+        var dGrossStr = isB ? "______________" : "$" + grossVal.toLocaleString(undefined, {minimumFractionDigits:2});
+        var dCaseNoStr = isB ? "______________" : activeCase.caseNo || "---";
+        var dDocketNoStr = isB ? "______________" : activeCase.docketNo || ("CV-" + activeCase.caseNo);
+        
+        var dSpecFeeStr = isB ? "______________" : "$" + specFee.toLocaleString(undefined, {minimumFractionDigits:2});
+        var dAttyFeeStr = isB ? "______________" : "$" + attyFee.toLocaleString(undefined, {minimumFractionDigits:2});
+        var dFilingCostsStr = isB ? "______________" : "$" + filing.toLocaleString(undefined, {minimumFractionDigits:2});
+        var dNetStr = isB ? "______________" : "$" + net.toLocaleString(undefined, {minimumFractionDigits:2});
+        var dSaleDateStr = isB ? "_________________" : activeCase.saleDate || "---";
+        
+        var dSig1Str = isB ? "________________________" : (activeCase.claimant1 || claimantsUpperRaw).toUpperCase();
+        var dSig2Str = isB ? "________________________" : (activeCase.claimant2 ? activeCase.claimant2.toUpperCase() : "---");
+        if (isB && !activeCase.claimant2) { dSig2Str = "________________________"; }
+
+        var dNotaryStr = isB ? "________________________________________________" : activeCase.claimants || claimantsUpperRaw;
+
+        var dClaimants = document.getElementById('docClaimants'); if (dClaimants) dClaimants.innerText = dClaimantsStr;
+        var dAddress = document.getElementById('docAddress'); if (dAddress) dAddress.innerText = dAddressStr;
+        var dAPN = document.getElementById('docAPN'); if (dAPN) dAPN.innerText = dAPNStr;
+        var dGross = document.getElementById('docGross'); if (dGross) dGross.innerText = dGrossStr;
+        var dCaseNo = document.getElementById('docCaseNo'); if (dCaseNo) dCaseNo.innerText = dCaseNoStr;
+        var dDocketNo = document.getElementById('docDocketNo'); if (dDocketNo) dDocketNo.innerText = dDocketNoStr;
+        var dSpecFee = document.getElementById('docSpecFee'); if (dSpecFee) dSpecFee.innerText = dSpecFeeStr;
+        var dAttyFee = document.getElementById('docAttyFee'); if (dAttyFee) dAttyFee.innerText = dAttyFeeStr;
+        var dFilingCosts = document.getElementById('docFilingCosts'); if (dFilingCosts) dFilingCosts.innerText = dFilingCostsStr;
+        var dNet = document.getElementById('docNet'); if (dNet) dNet.innerText = dNetStr;
+        var dSaleDate = document.getElementById('docSaleDate'); if (dSaleDate) dSaleDate.innerText = dSaleDateStr;
+        var dSig1 = document.getElementById('docSig1'); if (dSig1) dSig1.innerText = dSig1Str;
+        var dSig2 = document.getElementById('docSig2'); if (dSig2) dSig2.innerText = dSig2Str;
+        var dNotary = document.getElementById('docNotaryNames'); if (dNotary) dNotary.innerText = dNotaryStr;
+
+        var locClaimant = document.getElementById('locClaimant'); if (locClaimant) locClaimant.innerText = dClaimantsStr;
+        var locMonies = document.getElementById('locMonies'); if (locMonies) locMonies.innerText = dGrossStr;
+        var locCaseNo = document.getElementById('locCaseNo'); if (locCaseNo) locCaseNo.innerText = dCaseNoStr;
+        var locSigClaimant = document.getElementById('locSigClaimant'); if (locSigClaimant) locSigClaimant.innerText = dSig1Str;
+      };
+
+      window.openModal = function(id) { 
+        var m = document.getElementById(id); 
+        if (m) { m.style.setProperty("display", "flex", "important"); } 
+      };
+      
+      window.closeModal = function(id) { 
+        var m = document.getElementById(id); 
+        if (m) { m.style.setProperty("display", "none", "important"); } 
+      };
+
+      window.showToast = function(msg) { 
+        var t = document.getElementById("toastNotification"); 
+        if (!t) return; 
+        document.getElementById("toastMessage").innerText = msg; 
+        t.classList.remove("translate-y-20","opacity-0"); 
+        setTimeout(function() { t.classList.add("translate-y-20","opacity-0"); }, 3500); 
+      };
+
+      window.lookupAssessor = function() {
+        if (activeCase && activeCase.claimant1) {
+          try { navigator.clipboard.writeText(activeCase.claimant1); } catch(e){}
+          window.showToast("Copied '" + activeCase.claimant1 + "' to clipboard. Opening Assessor...");
+        }
+        setTimeout(function() { window.open("https://www.mohave.gov/departments/assessor/assessor-search/", "_blank"); }, 400);
+      };
+
+      window.lookupRecorder = function() {
+        if (activeCase && activeCase.claimant1) {
+          try { navigator.clipboard.writeText(activeCase.claimant1); } catch(e){}
+          window.showToast("Copied '" + activeCase.claimant1 + "' to clipboard. Opening Recorder...");
+        }
+        setTimeout(function() { window.open("https://eaglerss.mohave.gov/web/", "_blank"); }, 400);
+      };
+
+      window.openEditActiveModal = function() {
+        if (!activeCase) return;
+        document.getElementById('editCaseStatus').value = activeCase.status || "Available";
+        document.getElementById('editDocketNo').value = activeCase.docketNo || ("CV-" + activeCase.caseNo);
+        document.getElementById('editCaseNo').value = activeCase.caseNo;
+        document.getElementById('editTrustor').value = activeCase.claimants;
+        document.getElementById('editAPN').value = activeCase.apn === "TBD" ? "" : activeCase.apn;
+        document.getElementById('editAddress').value = activeCase.address === "Mohave County, AZ" ? "" : activeCase.address;
+        document.getElementById('editSaleDate').value = activeCase.saleDate === "TBD" ? "" : activeCase.saleDate;
+        document.getElementById('editDepDate').value = activeCase.depositDate;
+        document.getElementById('editGross').value = activeCase.gross;
+        window.openModal('modalEditCase');
+      };
+
+      window.saveActiveCaseEdits = function() {
+        var apn = document.getElementById('editAPN').value.trim() || "TBD";
+        var addr = document.getElementById('editAddress').value.trim() || "Mohave County, AZ";
+        var sale = document.getElementById('editSaleDate').value.trim() || "TBD";
+        var dep = document.getElementById('editDepDate').value.trim() || "TBD";
+        var gross = parseFloat(document.getElementById('editGross').value) || activeCase.gross;
+        var trustor = document.getElementById('editTrustor').value.trim() || activeCase.claimants;
+        var caseNo = document.getElementById('editCaseNo').value.trim() || activeCase.caseNo;
+        var docketNo = document.getElementById('editDocketNo').value.trim() || ("CV-" + caseNo);
+        var status = document.getElementById('editCaseStatus').value;
+
+        var parts = trustor.split(/ AND | & /i);
+
+        activeCase.status = status;
+        activeCase.docketNo = docketNo;
+        activeCase.apn = apn;
+        activeCase.address = addr;
+        activeCase.saleDate = sale;
+        activeCase.depositDate = dep;
+        activeCase.gross = gross;
+        activeCase.caseNo = caseNo;
+        activeCase.claimants = trustor;
+        activeCase.claimant1 = parts[0] ? parts[0].trim() : trustor;
+        activeCase.claimant2 = parts[1] ? parts[1].trim() : "";
+
+        var idx = MOHAVE_CASES.findIndex(function(c) { return c.id === activeCase.id; });
+        if (idx !== -1) { MOHAVE_CASES[idx] = activeCase; }
+
+        window.saveCasesToStorage();
+        window.closeModal('modalEditCase');
+        window.updateUI();
+        window.renderCaseRoster();
+        window.showToast("✓ APN, Docket & Case Details Updated.");
+      };
+
+      window.syncCounty = function() {
+        window.showToast("Syncing with verified Mohave County records...");
+        setTimeout(function() {
+          MOHAVE_MASTER_DATA.forEach(function(mc) {
+            var existing = MOHAVE_CASES.find(function(c) { return c.caseNo === mc.caseNo; });
+            if (!existing) {
+              MOHAVE_CASES.push(buildCaseObject(mc));
+            } else {
+              if (existing.apn === "TBD" && mc.apn !== "TBD") existing.apn = mc.apn;
+              if (existing.address === "Mohave County, AZ" && mc.address !== "Mohave County, AZ") existing.address = mc.address;
+              existing.docketNo = mc.docketNo;
+              existing.saleDate = mc.saleDate;
+            }
+          });
+          window.saveCasesToStorage();
+          window.renderCaseRoster();
+          window.selectCase(MOHAVE_CASES[0].id);
+          window.showToast("✓ Synced " + MOHAVE_CASES.length + " verified county records.");
+        }, 400);
+      };
+
+      window.pasteFromClipboard = async function() {
+        try {
+          var text = await navigator.clipboard.readText();
+          if (text) {
+            document.getElementById("importData").value = text;
+            window.showToast("Pasted clipboard text into import box.");
+          }
+        } catch (err) {
+          window.showToast("Clipboard access denied. Please use Ctrl+V / Cmd+V.");
+        }
+      };
+
+      window.processImport = function() {
+        var raw = document.getElementById("importData").value.trim();
+        if (!raw) return;
+
+        var rawLines = raw.split('\n');
+        var lines = [];
+        for (var k = 0; k < rawLines.length; k++) {
+          var trimmed = rawLines[k].trim();
+          if (trimmed.length > 0) lines.push(trimmed);
+        }
+        if (lines.length === 0) return;
+
+        var firstLine = lines[0];
+        var delimiter = '\t';
+        if (firstLine.indexOf('\t') !== -1) delimiter = '\t';
+        else if (firstLine.indexOf('|') !== -1) delimiter = '|';
+        else if (/\s{2,}/.test(firstLine)) delimiter = /\s{2,}/;
+        else if (firstLine.indexOf(',') !== -1) delimiter = ',';
+
+        var splitLine = function(l) {
+          return l.split(delimiter).map(function(c) {
+            return c.trim().replace(/^\||\|$/g, '');
+          });
+        };
+
+        var headers = splitLine(firstLine).map(function(h) { return h.toLowerCase(); });
+        var hasHeader = headers.some(function(h) {
+          return h.indexOf('case') !== -1 || h.indexOf('trustor') !== -1 || h.indexOf('deposit') !== -1 || h.indexOf('balance') !== -1 || h.indexOf('apn') !== -1;
+        });
+
+        var cIdx = 0, tIdx = 1, dIdx = 2, aIdx = 3, bIdx = 4, apnIdx = -1, addrIdx = -1;
+        var startRow = 0;
+
+        if (hasHeader) {
+          cIdx = headers.findIndex(function(h) { return h.includes('case'); });
+          tIdx = headers.findIndex(function(h) { return h.includes('trustor') || h.includes('claimant') || h.includes('name'); });
+          dIdx = headers.findIndex(function(h) { return h.includes('date'); });
+          aIdx = headers.findIndex(function(h) { return h.includes('amount'); });
+          bIdx = headers.findIndex(function(h) { return h.includes('balance'); });
+          apnIdx = headers.findIndex(function(h) { return h.includes('apn') || h.includes('parcel'); });
+          addrIdx = headers.findIndex(function(h) { return h.includes('address') || h.includes('property'); });
+          startRow = 1;
+        }
+
+        var imported = [];
+        for (var i = startRow; i < lines.length; i++) {
+          var cols = splitLine(lines[i]);
+          if (cols.length < 2) continue;
+
+          var caseNo = (cIdx >= 0 && cols[cIdx]) ? cols[cIdx] : "2026-" + Math.floor(1000 + Math.random() * 9000);
+          var trustor = (tIdx >= 0 && cols[tIdx]) ? cols[tIdx] : "Unknown Claimant";
+          var date = (dIdx >= 0 && cols[dIdx]) ? cols[dIdx] : "TBD";
+          var apn = (apnIdx >= 0 && cols[apnIdx]) ? cols[apnIdx] : "TBD";
+          var address = (addrIdx >= 0 && cols[addrIdx]) ? cols[addrIdx] : "Mohave County, AZ";
+          
+          var amtStr = (aIdx >= 0 && cols[aIdx]) ? cols[aIdx].replace(/[^0-9.-]+/g, "") : "0";
+          var balStr = (bIdx >= 0 && cols[bIdx]) ? cols[bIdx].replace(/[^0-9.-]+/g, "") : amtStr;
+          
+          var gross = parseFloat(balStr) || parseFloat(amtStr) || 0;
+          var parts = trustor.split(/ AND | & /i);
+
+          imported.push({
+            id: caseNo + "-" + i,
+            caseNo: caseNo,
+            docketNo: "CV-" + caseNo,
+            status: "Available",
+            claimant1: parts[0] ? parts[0].trim() : trustor,
+            claimant2: parts[1] ? parts[1].trim() : "",
+            claimants: trustor,
+            apn: apn,
+            address: address,
+            gross: gross,
+            saleDate: "TBD",
+            depositDate: date
+          });
+        }
+
+        if (imported.length > 0) {
+          MOHAVE_CASES = imported.concat(MOHAVE_CASES);
+          window.saveCasesToStorage();
+          window.closeModal('modalImport');
+          document.getElementById("importData").value = "";
+          window.renderCaseRoster();
+          window.selectCase(MOHAVE_CASES[0].id);
+          window.showToast("✓ Imported " + imported.length + " cases.");
+        } else {
+          window.showToast("Could not parse data rows. Please verify formatting.");
+        }
+      };
+
+      window.processAdd = function() {
+        var caseNo = document.getElementById("addCaseNo").value.trim() || "2026-MANUAL";
+        var docketNo = document.getElementById("addDocketNo").value.trim() || ("CV-" + caseNo);
+        var trustor = document.getElementById("addTrustor").value.trim() || "Unknown Claimant";
+        var apn = document.getElementById("addAPN").value.trim() || "TBD";
+        var address = document.getElementById("addAddress").value.trim() || "Mohave County, AZ";
+        var date = document.getElementById("addDepDate").value.trim() || "TBD";
+        var saleDate = document.getElementById("addSaleDate").value.trim() || "TBD";
+        var bal = parseFloat(document.getElementById("addCurBal").value) || 0;
+        var parts = trustor.split(/ AND | & /i);
+
+        var newCase = {
+          id: caseNo + "-" + Date.now(),
+          caseNo: caseNo,
+          docketNo: docketNo,
+          status: "Available",
+          claimant1: parts[0] ? parts[0].trim() : trustor,
+          claimant2: parts[1] ? parts[1].trim() : "",
+          claimants: trustor,
+          apn: apn,
+          address: address,
+          gross: bal,
+          saleDate: saleDate,
+          depositDate: date
+        };
+
+        MOHAVE_CASES.unshift(newCase);
+        window.saveCasesToStorage();
+        window.closeModal('modalAdd');
+        window.renderCaseRoster();
+        window.selectCase(newCase.id);
+        window.showToast("✓ Case added with APN: " + apn);
+      };
+
+      try {
+        if (sessionStorage.getItem("vault_auth") === "true" || localStorage.getItem("vault_pin_disabled") === "true") {
+          var modal = document.getElementById("pinLockModal");
+          if (modal) modal.style.setProperty("display", "none", "important");
+        }
+      } catch(e) {}
+
+      window.renderCaseRoster();
+      window.updateUI();
+
+    } catch (criticalError) {
+      console.error("Critical rendering failure isolated:", criticalError);
+    }
+  </script>
+</body>
+</html>
